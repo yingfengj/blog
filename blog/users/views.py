@@ -4,6 +4,8 @@ from django.db import DatabaseError
 from django.http import HttpResponseBadRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 import logging
+from django.shortcuts import redirect
+from django.urls import reverse
 
 # Create your views here.
 
@@ -113,7 +115,11 @@ class RegisterView(View):
             return HttpResponseBadRequest('注册失败')
 
         # 4.返回响应跳转到指定页面
-        return HttpResponse('注册成功，跳转至首页（未实现）')
+        # redirect 是进行重定向
+        # reverse是可以通过namespace:name 来获取到视图所对应的路由
+        return redirect(reverse('home:index'))
+        # return HttpResponse('注册成功，跳转至首页（未实现）')
+
 
 class SmsCodeView(View):
 
