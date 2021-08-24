@@ -160,3 +160,60 @@ class SmsCodeView(View):
             return JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '输入图形验证码有误'})
 
         return JsonResponse({'code': RETCODE.OK, 'errmsg': '发送短信成功'})
+
+class LoginView(View):
+    def get(self, request):
+
+        return render(request, 'login.html')
+
+    def post(self, request):
+
+        # 1.接收参数
+        mobile = request.POST.get('mobile')
+        password = request.POST.get('password')
+        remember = request.POST.get('remember')
+
+        # 2.校验参数
+        # 判断参数是否齐全
+        if not all([mobile, password]):
+            return HttpResponseBadRequest('缺少必传参数')
+
+        # 判断手机号是否正确
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return HttpResponseBadRequest('请输入正确的手机号')
+
+        # 判断密码是否是8-20个数字
+        if not re.match(r'^[0-9A-Za-z]{8,20}$', password):
+            return HttpResponseBadRequest('密码最少8位，最长20位')
+
+        # 3.用户认证登录
+        # 采用系统自带的认证方法进行认证
+        # 如果我们的用户名和密码正确，会返user
+        # 如果我们的用户名或密码不正确，会返回None
+        from django.contrib.auth import authenticate,login
+        # 新认的认证方法是针对于username字段进行用户名的判断
+        # 当前的判断信息是手机号，所以我们需要修改一下认证字段
+        # 我们需要到User模型中进行修改，等测试出现问题的时候，我们再修改
+        user = authenticate(mobile=mobile,password=password)
+        if user is None:
+            return HttpResponseBadRequest('用户名或者密码错误')
+
+        # 4.状态的保持
+        login(user=user,request=request)
+        response = redirect(reverse('home:index'))
+        # 5.根据用户选择的是否记住登录状态来进行判断
+        # 6.为了首页显示我们需要设置一些cookie信息
+        if remember != 'on':  # 无记住
+            # 浏览器关闭之后
+            request.session.set_expiry(0)
+            response.set_cookie('is_login', True)
+            response.set_cookie('username', user.username, max_age=14 * 24 * 3600)
+        else:
+            # 默认记住两周
+            request.session.set_expiry(None)
+            response.set_cookie('is_login', True,max_age=14 * 24 * 3600)
+            response.set_cookie('username', user.username, max_age=14 * 24 * 3600)
+
+
+        # 7.返回响应
+        return response
