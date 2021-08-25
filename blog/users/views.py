@@ -6,6 +6,7 @@ from django.shortcuts import render
 import logging
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # Create your views here.
 
@@ -16,6 +17,7 @@ from django_redis import get_redis_connection
 from libs.captcha.captcha import captcha
 from users.models import User
 from utils.response_code import RETCODE
+from django.contrib.auth import logout
 
 logger=logging.getLogger('django')
 
@@ -129,7 +131,6 @@ class RegisterView(View):
 
         return response
 
-
 class SmsCodeView(View):
 
     def get(self,request):
@@ -194,13 +195,19 @@ class LoginView(View):
         # 新认的认证方法是针对于username字段进行用户名的判断
         # 当前的判断信息是手机号，所以我们需要修改一下认证字段
         # 我们需要到User模型中进行修改，等测试出现问题的时候，我们再修改
-        user = authenticate(mobile=mobile,password=password)
+        user = authenticate(mobile=mobile, password=password)
         if user is None:
             return HttpResponseBadRequest('用户名或者密码错误')
 
         # 4.状态的保持
         login(user=user,request=request)
-        response = redirect(reverse('home:index'))
+
+        # 根据next参数来进行页面的跳转选择，默认跳转首页
+        next_page = request.GET.get('next')
+        if next_page:
+            response = redirect(next_page)
+        else:
+            response = redirect(reverse('home:index'))
         # 5.根据用户选择的是否记住登录状态来进行判断
         # 6.为了首页显示我们需要设置一些cookie信息
         if remember != 'on':  # 无记住
@@ -217,8 +224,6 @@ class LoginView(View):
 
         # 7.返回响应
         return response
-
-from  django.contrib.auth import logout
 
 class LogoutView(View):
 
@@ -289,4 +294,49 @@ class ForgetPasswordView(View):
         # 跳转到登录页面
         response = redirect(reverse('users:login'))
 
+        return response
+
+
+
+class UserCenterView(LoginRequiredMixin, View):
+    # LoginRequiredMixin
+    # 如果用户未登录的话，则会进行默认的跳转
+    # 默认认的跳转连接是：accounts/login/?next=xxx
+    # 所以得去修改系统的默认跳转路由，在setting 添加 LOGIN_URL = '/login/'
+    def get(self,request):
+        # 获取用户信息
+        user = request.user
+
+        # 组织模板渲染数据
+        context = {
+            'username': user.username,
+            'mobile': user.mobile,
+            'avatar': user.avatar if user.avatar else None,
+            'user_desc': user.user_desc
+        }
+
+        return render(request, 'center.html', context=context)
+
+    def post(self, request):
+        # 接收数据
+        user = request.user
+        avatar = request.FILES.get('avatar')
+        username = request.POST.get('username', user.username)
+        user_desc = request.POST.get('desc', user.user_desc)
+
+        # 修改数据库数据
+        try:
+            user.username = username
+            user.user_desc = user_desc
+            if avatar: # 同时需要设置图片上传位置 setting中设置 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+                user.avatar = avatar
+            user.save()
+        except Exception as e:
+            logger.error(e)
+            return HttpResponseBadRequest('更新失败，请稍后再试')
+
+        # 返回响应，刷新页面
+        response = redirect(reverse('users:center'))
+        # 更新cookie信息
+        response.set_cookie('username', user.username, max_age=14 * 24 * 3600)
         return response

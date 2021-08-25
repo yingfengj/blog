@@ -7,6 +7,7 @@
 
 from django.urls import path
 from users.views import RegisterView,ImageCodeView,SmsCodeView,LoginView,LogoutView,ForgetPasswordView
+from users.views import UserCenterView
 urlpatterns = [
     # path 第一个参数：路由
     # path 第二个参数：视图函数名
@@ -28,4 +29,7 @@ urlpatterns = [
 
     # 忘记密码
     path('forgetpassword/', ForgetPasswordView.as_view(),name='forgetpassword'),
+
+    # 用户中心
+    path('center/', UserCenterView.as_view(),name='center'),
 ]

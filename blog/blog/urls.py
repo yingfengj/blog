@@ -36,3 +36,9 @@ urlpatterns = [
     # path('', log),
     path('', include(('home.urls', 'home'), namespace = 'home')),
 ]
+
+# 以下是设置图片访问路由规则
+
+from django.conf import settings
+from django.conf.urls.static import static
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
