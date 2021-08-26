@@ -18,7 +18,7 @@ from libs.captcha.captcha import captcha
 from users.models import User
 from utils.response_code import RETCODE
 from django.contrib.auth import logout
-from home.models import ArticleCategory
+from home.models import ArticleCategory, Article
 
 logger=logging.getLogger('django')
 
@@ -355,3 +355,47 @@ class WriteBlogView(LoginRequiredMixin,View):
         }
 
         return render(request,'write_blog.html', context=context)
+
+    def post(self,request):
+
+        # 接收数据
+        avatar = request.FILES.get('avatar')
+        title = request.POST.get('title')
+        category_id = request.POST.get('category')
+        tags = request.POST.get('tags')
+        sumary = request.POST.get('sumary')
+        content = request.POST.get('content')
+        user = request.user
+
+        # 验证数据
+        # 验证数据是否齐全
+        if not all([avatar, title, category_id, sumary, content]):
+            return HttpResponseBadRequest('参数不全')
+
+        # 判断分类id
+        try:
+            category = ArticleCategory.objects.get(id = category_id)
+        except ArticleCategory.DoesNotExist:
+            return HttpResponseBadRequest('没有此分类')
+
+        # 数据入库
+        try:
+            article = Article.objects.create(
+                author=user,
+                avatar=avatar,
+                category=category,
+                tags=tags,
+                title=title,
+                sumary=sumary,
+                content=content
+            )
+        except Exception as e:
+            logger.error(e)
+            return HttpResponseBadRequest('发布失败，请稍后再试')
+
+
+        # 页面跳转
+        # 返回响应，跳转到文章详情页面
+        # 暂时先跳转到首页
+        return redirect(reverse('home:index'))
+        pass
