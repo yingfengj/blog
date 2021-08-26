@@ -18,6 +18,7 @@ from libs.captcha.captcha import captcha
 from users.models import User
 from utils.response_code import RETCODE
 from django.contrib.auth import logout
+from home.models import ArticleCategory
 
 logger=logging.getLogger('django')
 
@@ -340,3 +341,17 @@ class UserCenterView(LoginRequiredMixin, View):
         # 更新cookie信息
         response.set_cookie('username', user.username, max_age=14 * 24 * 3600)
         return response
+
+
+class WriteBlogView(LoginRequiredMixin,View):
+
+    def get(self,request):
+
+        # 查询所有分类模型
+        categories = ArticleCategory.objects.all()
+
+        context = {
+            'categories':categories
+        }
+
+        return render(request,'write_blog.html', context=context)
