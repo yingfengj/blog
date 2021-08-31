@@ -84,7 +84,7 @@ DATABASES = {
         'PORT': 3306,  # mysql的端口
         'USER': 'root',  # mysql的用户名
         'PASSWORD': 'cf1912449485',  # mysql的密码
-        # 'CHARSET': 'UTF-8',
+        'CHARSET': 'UTF-8',
     }
 }
 

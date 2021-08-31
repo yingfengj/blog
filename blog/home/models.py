@@ -45,7 +45,7 @@ class Article(models.Model):
     # 文章标题。
     title = models.CharField(max_length=100, null=False, blank=False)
     # 概要
-    sumary = models.CharField(max_length=200, null=False, blank=False)
+    sumary = models.CharField(max_length=20000, null=False, blank=False)
     # 文章正文。
     content = models.TextField()
     # 浏览量
@@ -73,3 +73,26 @@ class Article(models.Model):
     def __str__(self):
         # 将文章标题返回
         return self.title
+
+class Comment(models.Model):
+
+
+    # 评论内容
+    content = models.TextField()
+
+    # 评论时间
+    created = models.DateTimeField(auto_now_add=True)
+
+    # 评论文章
+    article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True)
+
+    # 评论用户
+    user = models.ForeignKey('users.User', on_delete=models.SET_NULL , null=True)
+
+    def __str__(self):
+        return self.article.title
+
+    class Meta:
+        db_table = 'tb_comment'
+        verbose_name = '评论管理'
+        verbose_name_plural = verbose_name
